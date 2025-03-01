@@ -1,0 +1,335 @@
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+a {
+  text-decoration: none;
+}
+
+/*NASLOVI STRANICA*/
+h1 {
+  color: #000000; /* Crna boja teksta */
+  font-weight: bold; /* Podebljan tekst */
+  font-size: 30px; /* Veličina fonta (prilagodite prema potrebi) */
+  margin-top: 20px; /* Razmak iznad naslova */
+  justify-content: center; /* Centriranje po horizontali */
+  align-items: center; /* Centriranje po vertikali */
+  text-align: center; /* Osigurava da je tekst centriran */
+  display: flex;
+  background-color: white;
+  padding: 10px;
+}
+/*------------------------------------------------------------------------------*/
+
+/*GUMBI NA POČETNOJ STRANICI */
+.button-container {
+  display: flex; /* Postavlja gumbe u red */
+  justify-content: space-between; /*  */
+  margin-top: 20px;
+}
+
+.gumbi {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px; 
+}
+
+.btn {
+  /*width: 1;*/
+  min-width: max-content;  /* ✅ Omogućava da svi linkovi budu širine najdužeg */
+  flex-grow: 1;  /* ✅ Svi linkovi zauzimaju istu širinu */
+  background-color: #be1e67;
+  color: black;
+  border: none;
+  padding: 10px 20px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s, transform 0.2s;
+  text-decoration: none;
+  display: inline-block;
+  margin: 10px;
+}
+
+.btn:hover {
+  background-color: #dd6519;
+  transform: scale(1.05);
+}
+
+/* AKTIVNI GUMB - Kada je stranica otvorena */
+.btn.active {
+  background-color: #dd6519; /* Ista boja kao hover */
+  transform: scale(1); /* Efekt povećanja */
+  justify-content: center;
+}
+
+/*-----------------------------------------------------------------------------*/
+
+/*PADAJUĆI IZBORNICI*/
+.my-dropdown {
+  font-weight: 700;
+  background-color: #be1e67 !important;
+  color: black !important;
+  margin: 12px;
+}
+
+.dash-dropdown {
+  background-color: #be1e67 !important;
+  color: black !important;
+  border-radius: 5px;
+  padding: 5px;
+}
+
+.padajuci-akademska {
+  background-color: #be1e67 !important;
+  color: black !important;
+  border-radius: 5px;
+  padding: 5px;
+}
+
+/*---------------------------------------------------------------------------*/
+
+/*PIVOT TABLICA /*
+
+/* 🔹 Naslov iznad tablice */
+.table-title {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 22px;
+  font-weight: bold;
+  color: #333;
+}
+
+/* 🔹 Stilizacija tablice */
+.dash-table-container {
+  width: 70%;
+  margin: auto;
+  padding: 20px;
+}
+
+/* 🔹 Osnovni stil tablice */
+.dash-spreadsheet {
+  border-collapse: collapse;
+  font-family: Arial, sans-serif;
+  width: 100%;
+}
+
+/* 🔹 Zaglavlje tablice */
+.dash-spreadsheet thead {
+  background-color: #be1e67 !important;
+}
+
+.dash-spreadsheet thead th {
+  background-color: #be1e67 !important;
+  color: white !important;
+  font-weight: bold !important;
+  text-align: center !important;
+  padding: 10px !important;
+}
+
+/* 🔹 Hover efekt za cijeli redak tablice */
+.dash-spreadsheet tbody tr:hover td {
+  background-color: #dd6519 !important;
+  color: white !important;
+}
+
+/* 🔹 Obrubi ćelija */
+.dash-spreadsheet td,
+.dash-spreadsheet th {
+  border: 1px solid #ddd !important;
+}
+
+/*-------------------------------------------------------------------*/
+/*OBIČNA TABLICA */
+
+/* 🔹 Stilizacija tablice */
+.dash-spreadsheet {
+  width: 70% !important;
+  margin: auto !important;
+  padding: 20px !important;
+  border-collapse: collapse !important;
+}
+
+/* 🔹 Stilizacija zaglavlja tablice */
+.dash-spreadsheet thead {
+  background-color: #be1e67 !important;
+}
+
+.dash-spreadsheet thead th {
+  background-color: #be1e67 !important;
+  color: white !important;
+  font-weight: bold !important;
+  text-align: center !important;
+  padding: 10px !important;
+  border: 1px solid #ddd !important;
+}
+
+/* 🔹 Stilizacija ćelija tablice */
+.dash-spreadsheet td {
+  padding: 8px !important;
+  text-align: center !important;
+  border-bottom: 1px solid #ddd !important;
+}
+
+/* 🔹 Naizmjenične boje redaka */
+.dash-spreadsheet tbody tr:nth-child(even) {
+  background-color: #f9f9f9 !important;
+}
+
+.dash-spreadsheet tbody tr:nth-child(odd) {
+  background-color: #ffffff !important;
+}
+
+/* 🔹 Hover efekt samo na redove podataka */
+.dash-spreadsheet tbody tr:hover {
+  background-color: #dd6519 !important;
+  color: white !important;
+}
+
+/* 🔹 Obrubi ćelija */
+.dash-spreadsheet td,
+.dash-spreadsheet th {
+  border: 1px solid #ddd !important;
+}
+
+/*-------------------------------------------------------------*/
+/* CHECKLIST */
+/* 🔹 Centriranje CheckList container-a */
+.checklist-container {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 18px;
+  font-weight: bold;
+  border: 2px solid #be1e67; /* ✅ Crni okvir */
+  border-radius: 10px; /* ✅ Zaobljeni rubovi */
+  padding: 15px; /* ✅ Unutarnji razmak */
+  margin: 20px; /* ✅ Vanjski razmak */
+  background-color: #f9f9f9; /* ✅ Svijetlo siva pozadina */
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); /* ✅ Blaga sjena */
+}
+
+/* 🔹 Stilizacija labela u CheckList-u */
+.checklist-container .dash-checklist label {
+  display: inline-block;
+  background-color: #f1f1f1;
+  padding: 8px 12px;
+  margin: 5px;
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+/* 🔹 Hover efekt */
+.checklist-container .dash-checklist label:hover {
+  background-color: #dd6519;
+  color: white;
+  transform: scale(1.05);
+}
+
+/* 🔹 Aktivni (odabrani) checkbox */
+.checklist-container .dash-checklist input[type="checkbox"]:checked + label {
+  background-color: #dd6519;
+  color: white;
+  font-weight: bold;
+}
+/*-------------------------------------------------------------------------------------------------*/
+/*PREUZIMANJE PIVOT EXCELA - ODABIR SEMESTRA I GUMB ZA PREUZIMANJE*/
+/* 🔹 Kontejner koji drži sve elemente u istom redu */
+.semester-filter-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* ✅ Poravnanje lijevo */
+  gap: 10px; /* ✅ Razmak između elemenata */
+  margin-bottom: 15px; /* ✅ Dodavanje razmaka ispod filtera */
+}
+
+/* 🔹 Label za filter */
+.semester-label {
+  font-size: 16px;
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+/* 🔹 Dropdown za odabir semestra */
+.semester-dropdown {
+  width: 200px;
+}
+
+/* 🔹 Gumb za preuzimanje */
+.excel-button {
+  padding: 8px 15px;
+  background-color: #be1e67;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.excel-button:hover {
+  background-color: #9c1551; /* Tamnija roza na hover */
+}
+
+/* 🔹 Povećavanje veličine fonta za label */
+.excel-label {
+  font-size: 14px; /* ✅ Povećan font */
+  font-weight: bold;
+  color: #333; /* Tamnija siva boja za bolju čitljivost */
+}
+
+/* 🔹 Dodavanje razmaka ispod labele */
+.excel-container {
+  margin-bottom: 20px; /* ✅ Povećan razmak ispod elementa */
+}
+/*-----------------------------------------------------------------------------------*/
+/*GRAFOVI */
+/* Kontejner za graf *
+.graph-container {
+    width: 50%; 
+    margin: 20px auto; 
+    padding: 20px;
+    background-color: #ffffff; 
+    border-radius: 10px; 
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); 
+}
+*/
+.graph-naslov {
+    display: flex;
+    width: 100%;
+    font-size: 22px;
+    font-weight: bold;
+    color: #333; 
+    text-align: center;
+    margin-bottom: 15px;
+    justify-content: center;
+}
+
+/*----------------------------------------------------------------------------------------*/
+/*KARTICE ZA PODATKE */
+/* Stilizacija kartice */
+.student-card {
+  width: 20%;
+  text-align: center;
+  margin: 10px;
+  padding: 20px;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  background-color: white;
+}
+
+/* Stilizacija naslova kartice */
+.student-card .card-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+/* Stilizacija broja studenata */
+.student-card .card-text {
+  font-size: 24px;
+  font-weight: bold;
+  color: #007bff;
+}
+/*------------------------------------------------------------------------------*/
