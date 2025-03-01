@@ -18,6 +18,19 @@ h1 {
   background-color: white;
   padding: 10px;
 }
+
+h2 {
+  color: #000000; /* Crna boja teksta */
+  font-weight: bold; /* Podebljan tekst */
+  font-size: 20px; /* Veličina fonta (prilagodite prema potrebi) */
+  margin-top: 20px; /* Razmak iznad naslova */
+  justify-content: center; /* Centriranje po horizontali */
+  align-items: center; /* Centriranje po vertikali */
+  text-align: center; /* Osigurava da je tekst centriran */
+  display: flex;
+  background-color: white;
+  padding: 10px;
+}
 /*------------------------------------------------------------------------------*/
 
 /*GUMBI NA POČETNOJ STRANICI */
@@ -103,7 +116,7 @@ h1 {
 
 /* 🔹 Stilizacija tablice */
 .dash-table-container {
-  width: 70%;
+  width: 100%;
   margin: auto;
   padding: 20px;
 }
@@ -333,3 +346,42 @@ h1 {
   color: #007bff;
 }
 /*------------------------------------------------------------------------------*/
+
+/* TABOVI */
+
+/* Stilizacija cijelog taba (navigacijske trake) */
+.nav-tabs {
+  border-bottom: 4px solid #be1e67; 
+}
+
+/* Stilizacija samih tabova */
+.nav-tabs .nav-link {
+  font-size: 18px;  /* Veći font */
+  font-weight: bold;
+  color: black;  /* Plava boja teksta */
+  background-color: #be1e67; /* Svjetlo siva pozadina */
+  border-radius: 8px 8px 0 0; /* Zaobljeni rubovi na vrhu */
+  padding: 10px 20px;
+  margin-right: 5px;
+}
+
+/* Aktivni tab */
+.nav-tabs .nav-link.active {
+  background-color: #dd6519; /* Plava pozadina */
+  color: black; /* Bijeli tekst */
+  border-color: black
+}
+
+/* Hover efekt */
+.nav-tabs .nav-link:hover {
+  background-color:  #dd6519; /* Svjetlija siva */
+  color: black; /* Tamnija plava */
+}
+
+/* Stilizacija sadržaja tabova */
+#content {
+  background-color: #ffffff;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 0 0 8px 8px;
+}
