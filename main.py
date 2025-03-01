@@ -24,7 +24,7 @@ csp = {
         "https://cdn.plot.ly", "https://cdnjs.cloudflare.com",
         "https://code.jquery.com", "https://cdn.jsdelivr.net"
     ],
-    "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+    "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
     "img-src": ["'self'", "data:", "https://lh3.googleusercontent.com"],
     "font-src": ["'self'", "https://fonts.gstatic.com"],
     "connect-src": [
@@ -97,7 +97,7 @@ app.layout = html.Div(style={'background-color': '#F4F4F4', 'padding': '20px'}, 
         html.Div([
             dcc.Location(id="url", refresh=False),          
             html.Img(src=image_url, style={'height': '80px', 'margin-right': '20px'}),
-            html.H2("Analiza podataka",  style={'color': '#ffffff', 'font-weight': 'bold'})
+            html.H6("Analiza podataka",  style={'color': '#ffffff', 'font-weight': 'bold','font-size':'30px'})
             ],style={'display': 'flex', 'align-items': 'center', 'background-color': '#151515', 'padding': '10px', 'border-radius':'6px'}),
         
         html.Div([
