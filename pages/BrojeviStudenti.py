@@ -1,55 +1,38 @@
-
 import dash
-from dash import dcc, html, Input, Output, callback_context, no_update, State, dash_table
+from dash import dcc, html, Input, Output, callback_context, no_update, State, dash_table, MATCH
 import pandas as pd
 import pymssql
 import plotly.express as px
 import warnings
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
+from baza import fetch_data_from_db, akademske_godine
 
 
 dash.register_page(__name__, path="/BrojeviStudenti")  # ✅ Ispravno
-
 warnings.filterwarnings("ignore", message="pandas only supports SQLAlchemy*")
 
 
-# Globalna varijabla za akademsku godinu
-akademska_godina = "2024/2025"  # Defaultna vrijednost
+#Dohvaćanje akademksih godina
+df_akademske, akademska_godina = akademske_godine()
 
 
 def get_student_data(akademska_godina):
     """ Dohvati podatke o studentima za određenu akademsku godinu. """
-    conn = pymssql.connect(
-        server="infoeduka.database.windows.net",
-        user="domagojRuzak",
-        password="Lozink@1234",
-        database="infoeduka_view"
-    )
-
-    query = """
-    SELECT oib, studij_naziv, smjer_naziv, godina, status_semestra, spol, nacin, status_studija
-    FROM dbo.analytics_final_statusi_studenata
-    WHERE ak_god_naziv = %s
-    """
     
-    df = pd.read_sql(query, conn, params=[akademska_godina])
+    query = """
+        SELECT oib, studij_naziv, smjer_naziv, godina, status_semestra, spol, nacin, status_studija
+        FROM dbo.analytics_final_statusi_studenata
+        WHERE ak_god_naziv = %s
+    """
 
-    #print(f"📌 DEBUG: Broj redaka u df ({akademska_godina}): {len(df)}")
-
-    conn.close()
+    df = fetch_data_from_db(query, params=[akademska_godina])
     
     return df
 
 def get_student_GS(akademska_godina):
-    """ Dohvati podatke o GS studentima za određenu akademsku godinu. """
-    conn = pymssql.connect(
-        server="infoeduka.database.windows.net",
-        user="domagojRuzak",
-        password="Lozink@1234",
-        database="infoeduka_view"
-    )
-
+    """ Dohvati podatke o GS studentima za određenu akademsku godinu ili sve GS studente """
+    
     if akademska_godina == '':
         query = """
             SELECT prezime, ime, jmbag, ak_god_naziv, godina, semestar_naziv, spol, smjer_naziv, status_semestra, status_studija, datum_statusa, student_tip
@@ -59,7 +42,7 @@ def get_student_GS(akademska_godina):
             AND smjer_naziv LIKE %s
         """
         params = ('%Goldsmiths%', 'Zimski semestar', '%(Engleski)%')
-        df_GS = pd.read_sql(query, conn, params=params)
+        df_GS = fetch_data_from_db(query,params=params)
     else:
         query = """
             SELECT prezime, ime, jmbag, ak_god_naziv, godina, semestar_naziv, spol, smjer_naziv, status_semestra, status_studija, datum_statusa, student_tip
@@ -70,9 +53,7 @@ def get_student_GS(akademska_godina):
             AND smjer_naziv LIKE %s
         """
         params = (akademska_godina,'%Goldsmiths%', 'Zimski semestar', '%(Engleski)%')
-        df_GS = pd.read_sql(query, conn, params=params)
-    
-    conn.close()
+        df_GS = fetch_data_from_db(query, params=params)
     
     return df_GS
 
@@ -88,7 +69,7 @@ app = dash.get_app()
 tab1_content = html.Div(style={'background-color': '#F4F4F4', 'padding': '20px'}, children=[ 
     # Header naslovom
     html.Div([
-        html.H2("Brojevi studenata", style={"text-align": "center"}),
+        html.H2("Studenti - Brojevi studenata", style={"text-align": "center"}),
         
     ]),
    
@@ -125,24 +106,29 @@ tab1_content = html.Div(style={'background-color': '#F4F4F4', 'padding': '20px'}
         html.Label("Broj studenata (po akademskoj godini)")
     ],className="graph-naslov"),
     
+    dcc.Loading(
+        id="loading-container",
+        type="circle",  # Može biti "default", "circle" ili "dot"
+        children=[
+            html.Div([
+                dbc.Card([
+                    dbc.CardBody([
+                        html.H5("UKUPAN BROJ STUDENATA", className="card-title"),
+                        html.H2(id="total-students", className="card-text")
+                    ])
+                ], className="student-card")  
+            ],style={'display':'flex','justify-content': 'center',  "align-items":'center','margin-bottom':'15px'}),
 
-    html.Div([
-        dbc.Card([
-            dbc.CardBody([
-                html.H5("UKUPAN BROJ STUDENATA", className="card-title"),
-                html.H2(id="total-students", className="card-text")
-            ])
-        ], className="student-card")  
-    ],style={'display':'flex','justify-content': 'center',  "align-items":'center','margin-bottom':'15px'}),
-
-    html.Div(style={'display': 'flex', 'justify-content': 'center','gap':'15px','margin-bottom':'15px'}, children=[
-        dcc.Graph(id="graf-studenti-status", style={'width': '25%', 'border': '2px solid black', 'padding': '10px', 'border-radius': '8px'}),
-        dcc.Graph(id="graf-studenti-zavrseno", style={'width': '25%', 'border': '2px solid black', 'padding': '10px', 'border-radius': '8px'})
-    ]),
-    html.Div(style={'display': 'flex', 'justify-content': 'center','gap':'15px'}, children=[ 
-        dcc.Graph(id="graf-studenti-nacin", style={'width': '25%', 'border': '2px solid black', 'padding': '10px', 'border-radius': '8px'}),
-        dcc.Graph(id="graf-studenti-spol", style={'width': '25%', 'border': '2px solid black', 'padding': '10px', 'border-radius': '8px'}) 
-    ]),
+            html.Div(style={'display': 'flex', 'justify-content': 'center','gap':'15px','margin-bottom':'15px'}, children=[
+                dcc.Graph(id="graf-studenti-status", style={'width': '25%', 'border': '2px solid black', 'padding': '10px', 'border-radius': '8px'}),
+                dcc.Graph(id="graf-studenti-zavrseno", style={'width': '25%', 'border': '2px solid black', 'padding': '10px', 'border-radius': '8px'})
+            ]),
+            html.Div(style={'display': 'flex', 'justify-content': 'center','gap':'15px'}, children=[ 
+                dcc.Graph(id="graf-studenti-nacin", style={'width': '25%', 'border': '2px solid black', 'padding': '10px', 'border-radius': '8px'}),
+                dcc.Graph(id="graf-studenti-spol", style={'width': '25%', 'border': '2px solid black', 'padding': '10px', 'border-radius': '8px'}) 
+            ]),
+        ]
+    ),
 
     #Skriveni objekti zbog Callbacka
     html.Div([
@@ -183,26 +169,32 @@ tab2_content = html.Div(style={'background-color': '#F4F4F4', 'padding': '20px'}
         html.Label("Broj studenata (po akademskoj godini)")
     ],className="graph-naslov"),
     
-    dbc.Container([
-        dash_table.DataTable(
-            id="gs-student-table",
-            columns=[
-                {"name": "Prezime", "id": "prezime"},
-                {"name": "Ime", "id": "ime"},
-                {"name": "JMBAG", "id": "jmbag"},
-                {"name": "Smjer", "id": "smjer_naziv"},
-                {"name": "Student tip", "id": "student_tip"},
-                {"name": "Status studija", "id":"status_studija"},
-                {"name": "ECTS Zimski", "id": "ects_zimski"},
-                {"name": "ECTS Zimski P", "id": "ects_zimski_p"},
-                {"name": "ECTS Ljetni", "id": "ects_ljetni"},
-                {"name": "ECTS Ljetni P", "id": "ects_ljetni_p"},
-            ],
-            style_table={"width": "100%", "overflowX": "auto"},  # 🚀 Rasteže tablicu po širini
-            style_cell={"textAlign": "left", "padding": "10px"},  # 📌 Poravnava tekst i dodaje padding
-            style_header={"backgroundColor": "#007bff", "color": "white", "fontWeight": "bold"},  # 📌 Plavo zaglavlje
-        )
-    ], fluid=True),
+    dcc.Loading(
+        id="loading-container",
+        type="circle",  # Može biti "default", "circle" ili "dot"
+        children=[
+            dbc.Container([
+                dash_table.DataTable(
+                    id="gs-student-table",
+                    columns=[
+                        {"name": "Prezime", "id": "prezime"},
+                        {"name": "Ime", "id": "ime"},
+                        {"name": "JMBAG", "id": "jmbag"},
+                        {"name": "Smjer", "id": "smjer_naziv"},
+                        {"name": "Student tip", "id": "student_tip"},
+                        {"name": "Status studija", "id":"status_studija"},
+                        {"name": "ECTS Zimski", "id": "ects_zimski"},
+                        {"name": "ECTS Zimski P", "id": "ects_zimski_p"},
+                        {"name": "ECTS Ljetni", "id": "ects_ljetni"},
+                        {"name": "ECTS Ljetni P", "id": "ects_ljetni_p"},
+                    ],
+                    style_table={"width": "100%", "overflowX": "auto"},  # 🚀 Rasteže tablicu po širini
+                    style_cell={"textAlign": "left", "padding": "10px"},  # 📌 Poravnava tekst i dodaje padding
+                    style_header={"backgroundColor": "#007bff", "color": "white", "fontWeight": "bold"},  # 📌 Plavo zaglavlje
+                )
+            ], fluid=True)
+        ]
+    ),
 
     #Dodani skriveni objekti zbog Callbacka
     html.Div([
@@ -230,16 +222,21 @@ tabs = html.Div([
 # **Layout aplikacije**
 layout = dbc.Container([
             html.Div([
-                html.H1("Analiza - brojevi studenata", style={"text-align": "center"}),    
+                html.H1("Studenti - Analiza po akademskoj godini", style={"text-align": "center"}),    
             ]),
+
+            
 
             tabs,
 
     ], fluid=True  # ✅ Osigurava prilagodbu širine ekrana
 )
 
-# **Callback funkcija za prebacivanje sadržaja u tabovima**
-@app.callback(Output("content", "children"), [Input("tabs", "active_tab")])
+#**Callback funkcija za prebacivanje sadržaja u tabovima**
+@app.callback(
+        Output("content", "children"), 
+        [Input("tabs", "active_tab")]
+)
 def switch_tab(at):
     if at == "tab-1":
         return tab1_content
@@ -429,21 +426,21 @@ def update_student_graphs(selected_studij, selected_smjer, selected_godina):
 
 @app.callback(
     Output("shared-data", "data", allow_duplicate=True),  
-    [Input("shared-data", "data"),
-     Input("shared-data-local","data")],
+    Input("shared-data", "data"),
+    Input("shared-data-local","data"),
     prevent_initial_call='initial_duplicate',
     allow_duplicate=True  # 👈 Omogućava pokretanje callbacka pri učitavanju
 )
 def update_akademska_godina(shared_data,data):
+      
     global akademska_godina  # ✅ Koristimo globalnu varijablu
 
     if not shared_data or "akademska_godina" not in shared_data or not data:
-        print("⚠️ `shared-data` je prazan! Akademska godina ostaje:", akademska_godina)
         return dash.no_update  # 🚀 Ne mijenja ništa ako nema novih podataka
 
     akademska_godina = shared_data.get("akademska_godina", "Nema podataka") 
-    print(f"✅ Brojevi studenata - akademska godina: {akademska_godina}")
-
+    
+    #print(f"✅ Brojevi studenata.py - Ažurirano share-data: {akademska_godina}")
     #return dash.no_update  # 🚀 Ne vraćamo ništa jer ne ažuriramo UI
     #return no_update, f'Broj studenata ({akademska_godina})'
 
@@ -451,46 +448,34 @@ def update_akademska_godina(shared_data,data):
 def get_gs_student_table(selected_smjer_gs, selected_godina_gs):
     """Generira tablicu sa studentima Goldsmiths programa sa ECTS podacima."""
 
-    # 🔹 Povezivanje s bazom podataka
-    conn = pymssql.connect(
-        server="infoeduka.database.windows.net",
-        user="domagojRuzak",
-        password="Lozink@1234",
-        database="infoeduka_view"
-    )
-
     # 🔹 Filtriramo `df_GS_akd` prema odabranom smjeru i godini
     df_filtered = df_GS_akd[
         (df_GS_akd["smjer_naziv"] == selected_smjer_gs) &
         (df_GS_akd["godina"] == selected_godina_gs)
     ]
-
+    
     # Ako nema podataka, vraćamo prazan DataFrame
     if df_filtered.empty:
-        conn.close()
         return pd.DataFrame(columns=["prezime", "ime", "jmbag", "smjer_naziv", "student_tip", 
                                      "ECTS zimski", "ECTS zimski P", "ECTS ljetni", "ECTS ljetni P"])
 
     # 🔹 Dohvat kolegija studenata iz `dbo.analytics_final_studentipredmeti`
     jmbags = tuple(df_filtered["jmbag"].unique())  # Pretvaramo u tuple za SQL IN ()
-    
+
     query_kolegiji = """
-    SELECT jmbag, kolegij_sifra, semestar, priznat_ponavlja, akademska_godina
-    FROM dbo.analytics_final_studentipredmeti
-    WHERE jmbag IN %s AND akademska_godina = %s
+        SELECT jmbag, kolegij_sifra, semestar, priznat_ponavlja, akademska_godina
+        FROM dbo.analytics_final_studentipredmeti
+        WHERE jmbag IN %s AND akademska_godina = %s
     """
     params = (jmbags, akademska_godina)  # Pravilno definiranje parametara
-    df_kolegiji = pd.read_sql(query_kolegiji, conn, params=params)
+    df_kolegiji = fetch_data_from_db(query_kolegiji,params=params)
 
     # 🔹 Dohvat ECTS bodova za kolegije iz `dbo.analytics_vss_predmeti`
     query_ects = """
         SELECT sifra, ects
         FROM dbo.analytics_vss_predmeti
     """
-    df_ects = pd.read_sql(query_ects, conn)
-
-    # 🔹 Zatvaramo konekciju
-    conn.close()
+    df_ects = fetch_data_from_db(query_ects)
 
     # 🔹 Spajamo kolegije sa ECTS podacima
     df_kolegiji = df_kolegiji.merge(df_ects, left_on="kolegij_sifra", right_on="sifra", how="left")
@@ -525,7 +510,7 @@ def update_gs_table(selected_smjer_gs, selected_godina_gs):
     if not selected_smjer_gs or not selected_godina_gs:
         raise PreventUpdate
     
-    print(selected_smjer_gs,selected_godina_gs)
+    #print(selected_smjer_gs,selected_godina_gs)
 
     df_gs_table = get_gs_student_table(selected_smjer_gs, selected_godina_gs)
     return df_gs_table.to_dict("records")
