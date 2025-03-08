@@ -2,59 +2,27 @@ import pandas as pd
 import plotly.express as px
 import dash
 from dash import dcc, html, Dash, no_update
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output, State, MATCH
 import requests
 from io import BytesIO
 from dash.exceptions import PreventUpdate
 from dash import dash_table
 from dash.dash_table.Format import Group
 import os
+from baza import fetch_data_from_db
+import dash_bootstrap_components as dbc
 
 
 
 dash.register_page(__name__, path="/ProsjekPredmeti")  # ✅ Ispravno
-
-
-
 html.Img(src='/content/logo.svg', style={'height': '80px', 'margin-right': '20px'})
 
 # Globalna varijabla u koju spremamo podatke iz `dcc.Store`
-akademska_godina = None
+#akademska_godina = None
+akademska_godina = "2024/2025"  # Defaultna vrijednost
 
-# Učitavanje podataka
-#file_path = "/content/2023_2024_SVE.xlsx"
-
-
-#SQL
-import pymssql
-
-# 🔹 Povezivanje sa SQL Serverom
-conn = pymssql.connect(
-    server="infoeduka.database.windows.net",
-    user="domagojRuzak",
-    password="Lozink@1234",
-    database="infoeduka_view"
-)
-
-# 🔹 Izvršavanje SQL upita
-query = "SELECT * FROM dbo.analytics_final_studentipredmeti WHERE akademska_godina = '2023/2024'"
-cursor = conn.cursor()
-
-# 🔹 Dohvaćanje podataka
-cursor.execute(query)
-rows = cursor.fetchall()
-
-# 🔹 Dohvaćanje naziva stupaca
-columns = [col[0] for col in cursor.description]
-
-# 🔹 Kreiranje Pandas DataFrame-a
-df = pd.DataFrame(rows, columns=columns)
-
-# 🔹 Zatvaranje konekcije
-conn.close()
-
-
-#df = pd.read_excel(file_path, sheet_name="Sheet1")
+query_default = "SELECT * FROM dbo.analytics_final_studentipredmeti WHERE akademska_godina = '2023/2024'"
+df = fetch_data_from_db(query_default)
 
 # Grupisanje podataka
 df_total = df.groupby(["kolegij_naziv", "smjer", "skolska_godina", "studij", "kolegij_sifra"])['ocjena'].count().reset_index()
@@ -103,9 +71,9 @@ image_id = "1IVYXW6Ye48OeHt6Xo89gJPp7NRySHwFH"  # Zameni svojim ID-om
 image_url = f"https://lh3.googleusercontent.com/d/{image_id}"
 
 
-layout = html.Div(style={'background-color': '#F4F4F4', 'padding': '20px'}, children=[
-
-    # Header naslovom
+#TAB1
+tabA_content = html.Div(style={'background-color': '#F4F4F4', 'padding': '20px'}, children=[
+        # Header naslovom
     html.Div([
         html.H1("Kolegij - Prosječne ocjene i prolaznost")
     ]),
@@ -140,11 +108,42 @@ layout = html.Div(style={'background-color': '#F4F4F4', 'padding': '20px'}, chil
     # Grafovi
     dcc.Graph(id='graf'),
     dcc.Graph(id='prolaznost_graf'),
-    dcc.Graph(id='prolaznost_ponavljaci_graf'),
+    dcc.Graph(id='prolaznost_ponavljaci_graf')
+])
 
+#TAB2
+tabB_content = html.Div(style={'background-color': '#F4F4F4', 'padding': '20px'}, children=[
     html.Div([
         html.H3("Broj studenata koji nisu položili kolegij", className="table-title"),
         
+         # Dropdown filteri
+        html.Div([
+            html.Label("Studij:", style={'display': 'flex', 'align-items': 'center','font-size': '20px', 'font-weight': 'bold'}),
+            dcc.Dropdown(id='studij_dropdown', 
+                        options=[{'label': studij, 'value': studij} for studij in sorted(df_grouped['studij'].unique())],
+                        placeholder="Odaberi studij",
+                        #value=sorted(df_grouped['studij'].unique()),
+                        style={'font-size': '18px','width': '80%', 'margin': '12px', 'backgroundColor': '#ffffff', 'color': '#000000'},
+                        className="my-dropdown"),
+
+            html.Label("Smjer:", style={'display': 'flex', 'align-items': 'center','font-size': '20px', 'font-weight': 'bold'}),
+            dcc.Dropdown(id='smjer_dropdown', 
+                        options=[],
+                        placeholder="Odaberi smjer",
+                        style={'font-size': '18px','width': '80%', 'margin': '12px', 'backgroundColor': '#ffffff', 'color': '#000000'},
+                        className="my-dropdown"),
+
+            html.Label("Školska godina:", style={'display': 'flex', 'align-items': 'center','font-size': '20px', 'font-weight': 'bold'}),
+            dcc.Dropdown(id='godina_dropdown', 
+                        options=[{'label': 'Sve', 'value': 'Sve'}] +
+                        [{'label': str(godina), 'value': godina} for godina in df_grouped['skolska_godina'].unique()],
+                        placeholder="Odaberi školsku godinu",
+                        #value='Sve',
+                        style={'font-size': '18px','width': '80%', 'margin': '12px', 'backgroundColor': '#ffffff', 'color': '#000000'},
+                        className="my-dropdown")
+        ], style={'display': 'flex', 'justify-content': 'center',  "align-items": "center", "width": "100%"}),
+
+
         dash_table.DataTable(
             id="pivot-tablica-nepolozeni",
             style_table={'overflowX': 'auto'},
@@ -178,9 +177,10 @@ layout = html.Div(style={'background-color': '#F4F4F4', 'padding': '20px'}, chil
         html.Label("Preuzimanje Excel pivot tablice sa brojem studenata koji nisu položili, a imaju potpis (svi studiji):",
             className="excel-label"
         )
-    ],className="excel-container"
+        ],className="excel-container"
     ),
-    html.Div([
+   
+   html.Div([
         html.Label("Filtriraj po semestru:", className="semester-label"),  # ✅ Dodana klasa
 
         dcc.Dropdown(
@@ -197,9 +197,144 @@ layout = html.Div(style={'background-color': '#F4F4F4', 'padding': '20px'}, chil
         html.Button("📥 Preuzmi Excel", id="download-btn", n_clicks=0, className="excel-button"),  # ✅ Dodana klasa
         dcc.Download(id="download-excel")
 
-    ], className="semester-filter-container")  # ✅ Glavna klasa za poravnanje lijevo    
-
+        ], className="semester-filter-container"
+    )
 ])
+
+tabs = html.Div([
+    dbc.Tabs(
+        [
+            dbc.Tab(label="Prosjek i Prolaznost", tab_id="tab-A"),
+            dbc.Tab(label="Ne položeni", tab_id="tab-B"),
+        ],
+        id="tabs-stranica1",
+        active_tab="tab-A",  # Prvi tab je inicijalno aktivan
+        className="nav-tabs mt-3"
+    ),
+    html.Div(id="content-stranica1")  # Ovdje će se prikazivati sadržaj odabranog taba
+])
+
+# **Layout aplikacije**
+layout = dbc.Container([
+            html.Div([
+                html.H1("Kolegij - Prosječne ocjene i prolaznost", style={"text-align": "center"}),    
+            ]),
+
+            tabs,
+
+    ], fluid=True  # ✅ Osigurava prilagodbu širine ekrana
+)
+
+# **Callback funkcija za prebacivanje sadržaja u tabovima**
+@app.callback(
+        Output("content-stranica1", "children"), 
+        [Input("tabs-stranica1", "active_tab")]
+)
+def switch_tab(at):
+    if at == "tab-A":
+        return tabA_content
+    elif at == "tab-B":
+        return tabB_content
+    return html.P("Ovo ne bi trebalo biti prikazano...")
+
+
+# layout = html.Div(style={'background-color': '#F4F4F4', 'padding': '20px'}, children=[
+
+#     # Header naslovom
+#     html.Div([
+#         html.H1("Kolegij - Prosječne ocjene i prolaznost")
+#     ]),
+
+#     # Dropdown filteri
+#     html.Div([
+#         html.Label("Studij:", style={'display': 'flex', 'align-items': 'center','font-size': '20px', 'font-weight': 'bold'}),
+#         dcc.Dropdown(id='studij_dropdown', 
+#                      options=[{'label': studij, 'value': studij} for studij in sorted(df_grouped['studij'].unique())],
+#                      placeholder="Odaberi studij",
+#                      #value=sorted(df_grouped['studij'].unique()),
+#                      style={'font-size': '18px','width': '80%', 'margin': '12px', 'backgroundColor': '#ffffff', 'color': '#000000'},
+#                      className="my-dropdown"),
+
+#         html.Label("Smjer:", style={'display': 'flex', 'align-items': 'center','font-size': '20px', 'font-weight': 'bold'}),
+#         dcc.Dropdown(id='smjer_dropdown', 
+#                      options=[],
+#                      placeholder="Odaberi smjer",
+#                      style={'font-size': '18px','width': '80%', 'margin': '12px', 'backgroundColor': '#ffffff', 'color': '#000000'},
+#                      className="my-dropdown"),
+
+#         html.Label("Školska godina:", style={'display': 'flex', 'align-items': 'center','font-size': '20px', 'font-weight': 'bold'}),
+#         dcc.Dropdown(id='godina_dropdown', 
+#                      options=[{'label': 'Sve', 'value': 'Sve'}] +
+#                      [{'label': str(godina), 'value': godina} for godina in df_grouped['skolska_godina'].unique()],
+#                      placeholder="Odaberi školsku godinu",
+#                      #value='Sve',
+#                      style={'font-size': '18px','width': '80%', 'margin': '12px', 'backgroundColor': '#ffffff', 'color': '#000000'},
+#                      className="my-dropdown")
+#     ], style={'display': 'flex', 'justify-content': 'center',  "align-items": "center", "width": "100%"}),
+
+#     # Grafovi
+#     dcc.Graph(id='graf'),
+#     dcc.Graph(id='prolaznost_graf'),
+#     dcc.Graph(id='prolaznost_ponavljaci_graf'),
+
+#     html.Div([
+#         html.H3("Broj studenata koji nisu položili kolegij", className="table-title"),
+        
+#         dash_table.DataTable(
+#             id="pivot-tablica-nepolozeni",
+#             style_table={'overflowX': 'auto'},
+
+#             # ✅ Stilizacija zaglavlja tablice
+#             style_header={
+#                 'backgroundColor': '#be1e67',  # Roza zaglavlje
+#                 'color': 'white',
+#                 'fontWeight': 'bold',
+#                 'textAlign': 'center',
+#                 'border': '1px solid #ddd'
+#             },
+
+#             # ✅ Stilizacija ćelija podataka
+#             style_data={
+#                 'textAlign': 'center',
+#                 'padding': '8px',
+#                 'border': '1px solid #ddd'
+#             },
+
+#             # ✅ Dodaj CSS pravila kako bi omogućili hover efekt
+#             css=[
+#                 {"selector": "tbody tr:hover td", "rule": "background-color: #dd6519 !important; color: white !important;"},
+#                 {"selector": ".dash-spreadsheet", "rule": "border-collapse: collapse !important;"}
+#             ]
+#         )
+#     ]),
+
+#     #Preuzimanje pivot excelice sa nepoloženima
+#     html.Div([
+#         html.Label("Preuzimanje Excel pivot tablice sa brojem studenata koji nisu položili, a imaju potpis (svi studiji):",
+#             className="excel-label"
+#         )
+#     ],className="excel-container"
+#     ),
+#     html.Div([
+#         html.Label("Filtriraj po semestru:", className="semester-label"),  # ✅ Dodana klasa
+
+#         dcc.Dropdown(
+#             id="filter_semestar",
+#             options=[
+#                 {"label": "Zimski semestar", "value": "Zimski semestar"},
+#                 {"label": "Ljetni semestar", "value": "Ljetni semestar"}
+#             ],
+#             placeholder="Odaberi semestar",
+#             clearable=True,
+#             className="semester-dropdown"  # ✅ Dodana klasa
+#         ),
+
+#         html.Button("📥 Preuzmi Excel", id="download-btn", n_clicks=0, className="excel-button"),  # ✅ Dodana klasa
+#         dcc.Download(id="download-excel")
+
+#     ], className="semester-filter-container")  # ✅ Glavna klasa za poravnanje lijevo    
+
+# ])
 
 @app.callback(
     Output('smjer_dropdown', 'options', allow_duplicate=True),  # ✅ Omogućava dupli output
@@ -301,11 +436,41 @@ def update_graph(selected_studij, selected_smjer, selected_godina):
     allow_duplicate=True  # 👈 Omogućava pokretanje callbacka pri učitavanju
 )
 def load_static_value(shared_data):
-    if not shared_data:
-        return no_update  # 🚀 Sprječavamo resetiranje
-    global akademska_godina  
-    akademska_godina = shared_data.get("akademska_godina", "Nema podataka")  
-    #print(f"ProsjekPredmeti {akademska_godina}")  
+    global akademska_godina
+    
+    ####
+    
+    if shared_data is None:
+        akademska_godina = akademska_godina
+    else:   
+        akademska_godina = shared_data.get("akademska_godina", "Nema podataka")  
+    #print(f"ProsjekPredmeti.py - Ažurirano shared-data: {akademska_godina}")  
+
+# @app.callback(
+#     Output("shared-data", "data", allow_duplicate=True),  
+#     Input("shared-data", "data"),
+#     Input("shared-data-local1","data"),
+#     prevent_initial_call='initial_duplicate',
+#     allow_duplicate=True  # 👈 Omogućava pokretanje callbacka pri učitavanju
+# )
+# def update_akademska_godina(shared_data,data):
+#     #ctx = callback_context
+#     #print(f"🚀 Callback triggered by: {ctx.triggered}")
+#     #####
+#     print(f"🔍 [DEBUG] ProsjekPredmeti.py - shared-data primio: {shared_data}")
+#     if shared_data is None:
+#         print("⚠️ [ALERT] shared-data je postao None u PP.py!")
+#         return {"akademska_godina": "2024/2025"}  # Reset na sigurnu vrijednost
+#     ######
+    
+#     global akademska_godina  # ✅ Koristimo globalnu varijablu
+
+#     if not shared_data or "akademska_godina" not in shared_data or not data:
+#         print("⚠️ `shared-data` je prazan! Akademska godina ostaje:", akademska_godina)
+#         return dash.no_update  # 🚀 Ne mijenja ništa ako nema novih podataka
+
+#     akademska_godina = shared_data.get("akademska_godina", "Nema podataka") 
+#     return dash.no_update
 
 #OSVJEŽAVANJE DF-a
 @app.callback(
@@ -315,30 +480,25 @@ def load_static_value(shared_data):
     Input("shared-data", "data")
 )
 def update_data(shared_data):
-    global akademska_godina
-    #akademska_godina = shared_data.get("akademska_godina", "Nema podataka")
-    
-    # 🔹 Povezivanje sa SQL Serverom
-    conn = pymssql.connect(
-        server="infoeduka.database.windows.net",
-        user="domagojRuzak",
-        password="Lozink@1234",
-        database="infoeduka_view"
-    )
+           
+    ####
+    #global akademska_godina
+    #akademska_godina = shared_data.get("akademska_godina", "Nema podataka")  
+    ####
 
-    # 🔹 Dinamički SQL upit
-    query = f"SELECT * FROM dbo.analytics_final_studentipredmeti WHERE akademska_godina = '{akademska_godina}'"
-    cursor = conn.cursor()
-    cursor.execute(query)
-    rows = cursor.fetchall()
-    columns = [col[0] for col in cursor.description]
-    
-    # 🔹 Kreiranje Pandas DataFrame-a
-    global df_grouped
+
     global df
-    df = pd.DataFrame(rows, columns=columns)
-    conn.close()
+    global df_grouped
+    ak = akademska_godina
 
+
+
+    query = """
+        SELECT * FROM dbo.analytics_final_studentipredmeti WHERE akademska_godina = %s
+    """
+    df = fetch_data_from_db(query, params=[ak])
+
+    
     # 🔹 Osvježavanje df_grouped
     df_total = df.groupby(["kolegij_naziv", "smjer", "skolska_godina", "studij", "kolegij_sifra"])['ocjena'].count().reset_index()
     df_total.rename(columns={'ocjena': 'broj_studenata'}, inplace=True)
@@ -359,6 +519,8 @@ def update_data(shared_data):
     df_priznati_total = df[df["priznat_ponavlja"] == "Priznat"].groupby(["kolegij_naziv", "smjer", "skolska_godina", "studij", "kolegij_sifra"])['ocjena'].count().reset_index()
     df_priznati_total.rename(columns={'ocjena': 'broj_priznatih'}, inplace=True)
 
+  
+
     # Spajanje podataka
     df_grouped = df_total.merge(df_passed, on=["kolegij_naziv", "smjer", "skolska_godina", "studij", "kolegij_sifra"], how="left")
     df_grouped = df_grouped.merge(df_avg, on=["kolegij_naziv", "smjer", "skolska_godina", "studij", "kolegij_sifra"], how="left")
@@ -369,6 +531,7 @@ def update_data(shared_data):
     df_semestar = df[['kolegij_sifra', 'semestar']].drop_duplicates()  # Makni duplikate
     df_grouped = df_grouped.merge(df_semestar, on='kolegij_sifra', how='left')
 
+    
 
     df_grouped.fillna(0, inplace=True)
 
@@ -382,6 +545,7 @@ def update_data(shared_data):
     smjer_options = []  # Prazan na početku
     godina_options = [{'label': g, 'value': g} for g in sorted(df_grouped['skolska_godina'].unique())]
 
+    
     return studiji_options, smjer_options, godina_options
 
 #### PIVOT ###
@@ -430,22 +594,14 @@ def update_pivot_table(selected_studij, selected_smjer, selected_godina):
 def get_student_data(akademska_godina):
     """ Dohvaća podatke iz SQL baze na temelju akademske godine. """
     
-    conn = pymssql.connect(
-        server="infoeduka.database.windows.net",
-        user="domagojRuzak",
-        password="Lozink@1234",
-        database="infoeduka_view"
-    )
-
-    query = f"""
+    ak = akademska_godina
+    query = """
         SELECT kolegij_naziv, kolegij_sifra, jmbag, grupa, semestar
         FROM dbo.analytics_final_studentipredmeti
-        WHERE akademska_godina = '{akademska_godina}' 
+        WHERE akademska_godina = %s 
         AND ocjena = 0 AND potpis = 1
     """
-
-    df = pd.read_sql(query, conn)
-    conn.close()
+    df = fetch_data_from_db(query, params=[ak])
     
     return df
 
