@@ -5,6 +5,7 @@ import pymssql
 import pandas as pd
 from flask_talisman import Talisman
 import dash_bootstrap_components as dbc
+from baza import fetch_data_from_db
 
 #app = dash.Dash(__name__, use_pages=True)
 
@@ -49,42 +50,14 @@ app = dash.Dash(
 image_id = "1IVYXW6Ye48OeHt6Xo89gJPp7NRySHwFH"  # Zameni svojim ID-om
 image_url = f"https://lh3.googleusercontent.com/d/{image_id}"
 
-
-
-########  DOHVAT AKADEMSKE SA SQL-A ##############
-# 🔹 Povezivanje sa SQL Serverom
-conn = pymssql.connect(
-    server="infoeduka.database.windows.net",
-    user="domagojRuzak",
-    password="Lozink@1234",
-    database="infoeduka_view"
-)
-
-# 🔹 Izvršavanje SQL upita
 query = "SELECT * FROM dbo.analytics_vss_struktura_akad_godine"
-cursor = conn.cursor()
-
-# 🔹 Dohvaćanje podataka
-cursor.execute(query)
-rows = cursor.fetchall()
-
-# 🔹 Dohvaćanje naziva stupaca
-columns = [col[0] for col in cursor.description]
-
-# 🔹 Kreiranje Pandas DataFrame-a
-df = pd.DataFrame(rows, columns=columns)
-
-# 🔹 Zatvaranje konekcije
-conn.close()
+df = fetch_data_from_db(query)
 
 # 🔹 Postavi inicijalnu akademsku godinu
 if df.empty:
     default_akademska_godina = "2023/2024"  # 🚀 Postavi sigurnu akademsku godinu ako nema podataka
 else:
     default_akademska_godina = df.loc[df['aktualna'] == "1", 'naziv'].values[0] if not df[df['aktualna'] == "1"].empty else df['naziv'].iloc[0]
-
-#default_akademska_godina = df.loc[df['aktualna'] == "1", 'naziv'].values[0] if not df[df['aktualna'] == "1"].empty else df['naziv'].iloc[0]
-#print(f"Defaultana akademska: {default_akademska_godina}")
 
 akademska_godina = default_akademska_godina
 
@@ -94,6 +67,7 @@ default_data = {"akademska_godina": default_akademska_godina}
 app.layout = html.Div(style={'background-color': '#F4F4F4', 'padding': '20px'}, children=[
         dcc.Store(id="shared-data", data=default_data, storage_type="session"),
         dcc.Store(id="shared-data-local",data={"a": "b"}),
+        dcc.Store(id="shared-data-local1",data={"a": "b"}),
         html.Div([
             dcc.Location(id="url", refresh=False),          
             html.Img(src=image_url, style={'height': '80px', 'margin-right': '20px'}),
@@ -121,34 +95,43 @@ app.layout = html.Div(style={'background-color': '#F4F4F4', 'padding': '20px'}, 
         # GUMBI ZA ODABIR STRANICA
             html.Div([
                 html.A("Kolegij - Prosječne ocjene i prolaznost", id="btn-kolegij", className="btn", href="/ProsjekPredmeti"),
-                html.A("Studenti - Prosječne ocjene",id="btn-student",className="btn", href="/ProsjekStudenti"),
-                html.A("Analiza - brojevi studenata",id="btn-broj",className="btn", href="/BrojeviStudenti")
+                html.A("Studenti - Analiza po gneraciji",id="btn-student",className="btn", href="/ProsjekStudenti"),
+                html.A("Studenti - Analiza po akademskoj godini",id="btn-broj",className="btn", href="/BrojeviStudenti")
             ],className="gumbi")
             
         ], className="button-container"),
         
         html.Hr(),
 
-        dcc.Loading(
-            id="loading-container",
-            type="circle",  # Može biti "default", "circle" ili "dot"
-            children=[dash.page_container]
-        )
+        # dcc.Loading(
+        #     id="loading-container",
+        #     type="circle",  # Može biti "default", "circle" ili "dot"
+        #     children=[dash.page_container]
+        # )
         
-        #dash.page_container  # 🔹 Dodano kako bi prikazalo dinamične stranice
+        dash.page_container  # 🔹 Dodano kako bi prikazalo dinamične stranice
     ]
 )
 
 @app.callback(
     Output("shared-data", "data", allow_duplicate=True),
     [Input("akademska-godina-dropdown", "value"),
-     Input("url", "pathname")],
+     Input("url", "pathname"),
+     Input("shared-data", "data")],
     prevent_initial_call='initial_duplicate'  # 🚀 Sprječava inicijalni poziv
 )
-def update_akademska_godina(selected_godina,pathname):
-    if not selected_godina:
-        return dash.no_update  # ✅ Sprječava resetiranje na `None`
-    print(f"✅ Ažurirano shared-data: {selected_godina}")
+def update_akademska_godina(selected_godina,pathname,shared_data):
+    
+    ####
+    #print(f"🔍 [DEBUG] main.py - shared-data primio: {selected_godina}")
+    if selected_godina is None:
+        print("⚠️ [ALERT] shared-data je postao None u main.py!")
+        return {"akademska_godina": "2024/2025"}  # Reset na sigurnu vrijednost
+    ####
+
+    #if shared_data is None:
+    #   return dash.no_update  # ✅ Sprječava resetiranje na `None`
+    
     return {"akademska_godina": selected_godina}  # ✅ Ažurira vrijednost u `dcc.Store`
 
 @app.callback(
